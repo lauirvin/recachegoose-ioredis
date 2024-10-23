@@ -1,27 +1,17 @@
 //Adopted from on https://github.com/xrip/cachegoose
 
+import { RedisOptions } from 'ioredis';
 import { Document, Mongoose } from 'mongoose';
 
 declare module 'recachegoose-ioredis' {
 
-	function cachegoose(mongoose: Mongoose, cacheOptions: cachegoose.Types.IOptions): void;
+    function cachegoose(mongoose: Mongoose, cacheOptions: RedisOptions): void;
 
-	namespace cachegoose {
-		namespace Types {
-			interface IOptions {
-				engine?: string
-				count?: number
-				port?: number
-				host?: string
-				password?: string,
-				client?: any,
-			}
-		}
+    namespace cachegoose {
+        function clearCache(customKey: any, cb: any): void;
+    }
 
-		function clearCache(customKey: any, cb: any): void;
-	}
-
-	export = cachegoose;
+    export = cachegoose;
 }
 
 declare module 'mongoose' {
