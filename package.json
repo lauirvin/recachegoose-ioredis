@@ -1,7 +1,7 @@
 {
   "name": "recachegoose-ioredis",
   "version": "11.0.4",
-  "description": "Mongoose caching that actually works.",
+  "description": "A Mongoose caching module that works exactly how you'd expect, fully compatible with the latest version of Mongoose and optimized with ioredis for better integration in serverless environments.",
   "main": "index.js",
   "types": "index.d.ts",
   "directories": {
@@ -34,7 +34,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/aalfiann/recachegoose.git"
+    "url": "https://github.com/lauirvin/recachegoose-ioredis.git"
   },
   "keywords": [
     "cache",
@@ -43,12 +43,21 @@
     "mongoose",
     "redis",
     "store",
-    "ttl"
+    "ttl",
+    "serverless",
+    "lambda",
+    "amplify",
+    "aws",
+    "azure",
+    "google",
+    "cloud",
+    "cache",
+    "caching"
   ],
-  "author": "Bob Lauer <rlauer@gmail.com>",
+  "author": "Irvin Ives Lau",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/aalfiann/recachegoose/issues"
+    "url": "https://github.com/lauirvin/recachegoose-ioredis/issues"
   },
-  "homepage": "https://github.com/aalfiann/recachegoose"
+  "homepage": "https://github.com/lauirvin/recachegoose-ioredis"
 }
