@@ -1,28 +1,22 @@
-> This is a fork version of [cachegoose](https://github.com/boblauer/cachegoose) with following differences :
-- Minimum NodeJS 16
-- Removed old libraries
-- Fixing all vulnerables
-- Up to date
-- Typescript [support](https://github.com/xrip/cachegoose)
-- Replace [cacheman](https://github.com/cayasso/cacheman) with [recacheman](https://github.com/aalfiann/recacheman)
+> This is a fork version of [recachegoose](https://github.com/aalfiann/recachegoose) with following differences:
+- Replaced [recacheman](https://github.com/aalfiann/recacheman) with [ioredis](https://github.com/redis/ioredis)
+- Improved integration with serverless environment - AWS Amplify, AWS Lambda, Google Cloud Functions, Azure Functions, etc.
 
-# recachegoose #
+# recachegoose-ioredis #
 
-#### Mongoose caching that actually works. ####
+#### Mongoose Caching That Actually Works—Now with ioredis ####
 
-[![NPM](https://nodei.co/npm/recachegoose.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/recachegoose/)  
+[![NPM](https://nodei.co/npm/recachegoose-ioredis.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/recachegoose-ioredis/)  
   
-[![npm version](https://img.shields.io/npm/v/recachegoose.svg?style=flat-square)](https://www.npmjs.org/package/recachegoose)
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/aalfiann/recachegoose/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/aalfiann/recachegoose/tree/master)
-[![Coverage Status](https://coveralls.io/repos/github/aalfiann/recachegoose/badge.svg?branch=master)](https://coveralls.io/github/aalfiann/recachegoose?branch=master)
-[![Known Vulnerabilities](https://snyk.io//test/github/aalfiann/recachegoose/badge.svg?targetFile=package.json)](https://snyk.io//test/github/aalfiann/recachegoose?targetFile=package.json)
+[![npm version](https://img.shields.io/npm/v/recachegoose-ioredis.svg?style=flat-square)](https://www.npmjs.org/package/recachegoose-ioredis)
+[![Known Vulnerabilities](https://snyk.io//test/github/lauirvin/recachegoose-ioredis/badge.svg?targetFile=package.json)](https://snyk.io//test/github/lauirvin/recachegoose-ioredis?targetFile=package.json)
 ![License](https://img.shields.io/npm/l/recachegoose)
-![NPM download/month](https://img.shields.io/npm/dm/recachegoose.svg)
-![NPM download total](https://img.shields.io/npm/dt/recachegoose.svg)  
+![NPM download/month](https://img.shields.io/npm/dm/recachegoose-ioredis.svg)
+![NPM download total](https://img.shields.io/npm/dt/recachegoose-ioredis.svg)  
 
 ## About ##
 
-A Mongoose caching module that works exactly how you would expect it to, with the latest version of Mongoose.
+A Mongoose caching module that works exactly how you'd expect, fully compatible with the latest version of Mongoose and optimized with ioredis for better integration in serverless environments.
 
 > Important:  
   If you are using Mongoose 4.x or below, you have to use original [cachegoose](https://github.com/boblauer/cachegoose) and use version <= 4.x of it.
@@ -31,55 +25,15 @@ A Mongoose caching module that works exactly how you would expect it to, with th
 
 ## Usage ##
 
-- Use In Memory
-```javascript
-var mongoose = require('mongoose');
-var cachegoose = require('recachegoose');
-
-cachegoose(mongoose, {
-  engine: 'memory'
-});
-```
-
-- Use File
-```javascript
-var mongoose = require('mongoose');
-var cachegoose = require('recachegoose');
-
-cachegoose(mongoose, {
-  engine: 'file'
-});
-```
-
 - Use Redis
 ```javascript
 var mongoose = require('mongoose');
-var cachegoose = require('recachegoose');
+var cachegoose = require('recachegoose-ioredis');
 
 cachegoose(mongoose, {
-  engine: 'redis',
   port: 6379,
-  host: 'localhost'
-});
-
-// or with redis url connection string
-// redis[s]://[[username][:password]@][host][:port][/db-number]
-cachegoose(mongoose, {
-  engine: 'redis',
-  url: 'redis://localhost:6379'
-});
-
-// or with redis client with connection string
-// backwards compatibility
-cachegoose(mongoose, {
-  engine: 'redis',
-  client: 'redis://localhost:6379'
-});
-
-// backwards compatibility
-cachegoose(mongoose, {
-  engine: 'redis',
-  client: require('redis').createClient('redis://localhost:6379')
+  host: 'localhost',
+  password: 'yourpassword'
 });
 ```
 
