@@ -1,6 +1,6 @@
 {
   "name": "recachegoose-ioredis",
-  "version": "11.0.4",
+  "version": "11.0.5",
   "description": "A Mongoose caching module that works exactly how you'd expect, fully compatible with the latest version of Mongoose and optimized with ioredis for better integration in serverless environments.",
   "main": "index.js",
   "types": "index.d.ts",
