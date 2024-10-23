@@ -1,6 +1,6 @@
 {
   "name": "recachegoose-ioredis",
-  "version": "11.0.3",
+  "version": "11.0.4",
   "description": "Mongoose caching that actually works.",
   "main": "index.js",
   "types": "index.d.ts",
