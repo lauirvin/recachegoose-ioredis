@@ -2,7 +2,7 @@
 
 import { Document, Mongoose } from 'mongoose';
 
-declare module 'recachegoose' {
+declare module 'recachegoose-ioredis' {
 
 	function cachegoose(mongoose: Mongoose, cacheOptions: cachegoose.Types.IOptions): void;
 

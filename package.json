@@ -1,6 +1,6 @@
 {
-  "name": "recachegoose",
-  "version": "11.0.2",
+  "name": "recachegoose-ioredis",
+  "version": "11.0.3",
   "description": "Mongoose caching that actually works.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -8,9 +8,7 @@
     "test": "test"
   },
   "dependencies": {
-    "recacheman": "^2.3.5",
-    "recacheman-file": "^0.2.5",
-    "recacheman-redis": "^3.0.1",
+    "ioredis": "^5.4.1",
     "sha1": "^1.1.1"
   },
   "peerDependencies": {
