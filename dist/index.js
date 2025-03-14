@@ -7,13 +7,38 @@ module.exports = function init(mongoose, cacheOptions = {}) {
   if (hasRun) return;
   hasRun = true;
   init._cache = cache = require('./cache')(cacheOptions);
+
+  // Automatically connect when initializing
+  cache.connect();
   require('./extend-query')(mongoose, cache);
   require('./extend-aggregate')(mongoose, cache);
 };
 module.exports.clearCache = function (customKey, cb = () => {}) {
+  if (!cache) return Promise.resolve(false);
   if (!customKey) {
-    cache.clear(cb);
-    return;
+    return cache.clear(cb);
   }
-  cache.del(customKey, cb);
+  return cache.del(customKey, cb);
+};
+module.exports.setCache = function (customKey, value, ttl = -1, cb = () => {}) {
+  if (!cache) return Promise.resolve(false);
+  return cache.set(customKey, value, ttl, cb);
+};
+module.exports.disconnect = function (cb = () => {}) {
+  if (!cache) return Promise.resolve(false);
+  return cache.close(cb);
+};
+module.exports.connect = function (cb = () => {}) {
+  if (!cache) return Promise.resolve(false);
+  return cache.connect().then(result => {
+    cb(null, result);
+    return result;
+  }).catch(err => {
+    cb(err);
+    return false;
+  });
+};
+module.exports.isConnected = function () {
+  if (!cache) return false;
+  return cache.isConnected();
 };

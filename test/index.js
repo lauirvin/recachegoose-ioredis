@@ -1,5 +1,4 @@
 'use strict';
-
 require('should');
 
 const mongoose = require('mongoose');
@@ -14,7 +13,10 @@ describe('cachegoose', () => {
   before((done) => {
     cachegoose(mongoose);
 
-    mongoose.connect('mongodb://127.0.0.1/mongoose-cachegoose-testing', { useNewUrlParser: true, useUnifiedTopology: true });
+    mongoose.connect('mongodb://127.0.0.1/mongoose-cachegoose-testing', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     db = mongoose.connection;
 
     db.on('error', done);
@@ -26,8 +28,8 @@ describe('cachegoose', () => {
       str: String,
       date: {
         type: Date,
-        default: Date.now
-      }
+        default: Date.now,
+      },
     });
 
     Record = mongoose.model('Record', RecordSchema);
@@ -215,7 +217,12 @@ describe('cachegoose', () => {
 
     await generate(10);
 
-    await Promise.all(new Array(20).join('.').split('').map(() => getAll(60)));
+    await Promise.all(
+      new Array(20)
+        .join('.')
+        .split('')
+        .map(() => getAll(60))
+    );
 
     const cached = await getAll(60);
     cached.length.should.equal(10);
@@ -378,35 +385,43 @@ describe('cachegoose', () => {
   });
 
   it('should return same _id when not ObjectId instance for lean', async () => {
-    const records = [{
-      _id: 'abcdefghijkl',
-      num: 111,
-      str: 'foo'
-    }, {
-      _id: 2,
-      num: 222,
-      str: 'bar'
-    }, {
-      _id: undefined,
-      num: 333,
-      str: 'baz'
-    }, {
-      _id: null,
-      num: 444,
-      str: 'hello'
-    }, {
-      _id: '61e9d74451ffc373968b144e',
-      num: 555,
-      str: 'world'
-    }, {
-      _id: 40549748900222,
-      num: 666,
-      str: 'id out of range'
-    }, {
-      _id: 'abcdefghijklm',
-      num: 777,
-      str: 'id not 12 bytes and not 24 hex chars'
-    }];
+    const records = [
+      {
+        _id: 'abcdefghijkl',
+        num: 111,
+        str: 'foo',
+      },
+      {
+        _id: 2,
+        num: 222,
+        str: 'bar',
+      },
+      {
+        _id: undefined,
+        num: 333,
+        str: 'baz',
+      },
+      {
+        _id: null,
+        num: 444,
+        str: 'hello',
+      },
+      {
+        _id: '61e9d74451ffc373968b144e',
+        num: 555,
+        str: 'world',
+      },
+      {
+        _id: 40549748900222,
+        num: 666,
+        str: 'id out of range',
+      },
+      {
+        _id: 'abcdefghijklm',
+        num: 777,
+        str: 'id not 12 bytes and not 24 hex chars',
+      },
+    ];
     await Record.create(records);
     const originalRes = await getAllLean(60);
     const cachedRes = await getAllLean(60);
@@ -416,7 +431,8 @@ describe('cachegoose', () => {
 
     for (let idx = 0; idx < originalRes.length; idx++) {
       if (originalRes[idx]._id instanceof mongoose.Types.ObjectId) {
-        const originalConstructor = originalRes[idx]._id.constructor.name.should;
+        const originalConstructor =
+          originalRes[idx]._id.constructor.name.should;
         const cachedConstructor = cachedRes[idx]._id.constructor.name.should;
         originalConstructor.should.deepEqual(cachedConstructor);
       }
@@ -429,9 +445,7 @@ function getAll(ttl, cb) {
 }
 
 function aggregateAll(ttl, cb) {
-  return Record.aggregate([
-    { $match: {} }
-  ])
+  return Record.aggregate([{ $match: {} }])
     .cache(ttl)
     .exec(cb);
 }
@@ -449,11 +463,16 @@ function getAllLean(ttl, cb) {
 }
 
 function getOne(ttl, cb) {
-  return Record.findOne({ num: { $gt: 2 } }).cache(ttl).exec(cb);
+  return Record.findOne({ num: { $gt: 2 } })
+    .cache(ttl)
+    .exec(cb);
 }
 
 function getOneLean(ttl, cb) {
-  return Record.findOne({ num: { $gt: 2 } }).lean().cache(ttl).exec(cb);
+  return Record.findOne({ num: { $gt: 2 } })
+    .lean()
+    .cache(ttl)
+    .exec(cb);
 }
 
 function getWithSkip(skip, ttl, cb) {
@@ -469,19 +488,27 @@ function getNone(ttl, cb) {
 }
 
 function getAllWithRegex(ttl, cb) {
-  return Record.find({ str: { $regex: /\d/ } }).cache(ttl).exec(cb);
+  return Record.find({ str: { $regex: /\d/ } })
+    .cache(ttl)
+    .exec(cb);
 }
 
 function getNoneWithRegex(ttl, cb) {
-  return Record.find({ str: { $regex: /\d\d/ } }).cache(ttl).exec(cb);
+  return Record.find({ str: { $regex: /\d\d/ } })
+    .cache(ttl)
+    .exec(cb);
 }
 
 function getWithUnorderedQuery(ttl, cb) {
   getWithUnorderedQuery.flag = !getWithUnorderedQuery.flag;
   if (getWithUnorderedQuery.flag) {
-    return Record.find({ num: { $exists: true }, str: { $exists: true } }).cache(ttl).exec(cb);
+    return Record.find({ num: { $exists: true }, str: { $exists: true } })
+      .cache(ttl)
+      .exec(cb);
   } else {
-    return Record.find({ str: { $exists: true }, num: { $exists: true } }).cache(ttl).exec(cb);
+    return Record.find({ str: { $exists: true }, num: { $exists: true } })
+      .cache(ttl)
+      .exec(cb);
   }
 }
 
@@ -491,22 +518,13 @@ function getAllSorted(sortObj) {
 
 function count(ttl, cb) {
   // collection.count was deprecated in new mongoose version, so we change it with countDocuments
-  return Record.find({})
-    .cache(ttl)
-    .countDocuments()
-    .exec(cb);
+  return Record.find({}).cache(ttl).countDocuments().exec(cb);
 }
 function countDocuments(ttl, cb) {
-  return Record.find({})
-    .cache(ttl)
-    .countDocuments()
-    .exec(cb);
+  return Record.find({}).cache(ttl).countDocuments().exec(cb);
 }
 function estimatedDocumentCount(ttl, cb) {
-  return Record.find({})
-    .cache(ttl)
-    .estimatedDocumentCount()
-    .exec(cb);
+  return Record.find({}).cache(ttl).estimatedDocumentCount().exec(cb);
 }
 
 function aggregate(ttl, cb) {
@@ -522,7 +540,7 @@ function generate(amount) {
   while (count < amount) {
     records.push({
       num: count,
-      str: count.toString()
+      str: count.toString(),
     });
     count++;
   }

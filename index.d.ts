@@ -8,7 +8,11 @@ declare module 'recachegoose-ioredis' {
     function cachegoose(mongoose: Mongoose, cacheOptions: RedisOptions): void;
 
     namespace cachegoose {
-        function clearCache(customKey: any, cb: any): void;
+        function clearCache(customKey: any, cb?: (err: Error | null) => void): Promise<boolean>;
+        function setCache(customKey: string, value: any, ttl?: number, cb?: (err: Error | null) => void): Promise<boolean>;
+        function disconnect(cb?: (err: Error | null) => void): Promise<boolean>;
+        function connect(cb?: (err: Error | null, result: boolean) => void): Promise<boolean>;
+        function isConnected(): boolean;
     }
 
     export = cachegoose;
