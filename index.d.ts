@@ -5,7 +5,38 @@ import { Document, Mongoose } from 'mongoose';
 
 declare module 'recachegoose-ioredis' {
 
-    function cachegoose(mongoose: Mongoose, cacheOptions: RedisOptions): void;
+    // Extended options interface with serverless-specific options
+    interface CachegooseOptions extends RedisOptions {
+        /**
+         * Enable serverless mode for optimized behavior in Lambda, Amplify or other serverless environments
+         * When enabled:
+         * - Connections are lazy-loaded on first use
+         * - Default TTL is increased to 5 minutes
+         * - Connection timeouts are more aggressive
+         * - Connection pooling is optimized for ephemeral containers
+         */
+        serverlessMode?: boolean;
+
+        /**
+         * Custom prefix for cache keys
+         * @default 'cachegoose:'
+         */
+        prefix?: string;
+
+        /**
+         * Connection timeout in milliseconds
+         * @default 5000
+         */
+        connectTimeout?: number;
+
+        /**
+         * Maximum number of retry attempts per request
+         * @default 3
+         */
+        maxRetriesPerRequest?: number;
+    }
+
+    function cachegoose(mongoose: Mongoose, cacheOptions?: CachegooseOptions): void;
 
     namespace cachegoose {
         function clearCache(customKey: any, cb?: (err: Error | null) => void): Promise<boolean>;

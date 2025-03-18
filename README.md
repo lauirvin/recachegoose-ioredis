@@ -75,6 +75,112 @@ ChildrenSchema.post('save', function(child) {
 
 Insert `.cache()` into the queries you want to cache, and they will be cached.  Works with `select`, `lean`, `sort`, and anything else that will modify the results of a query.
 
+## Connection Management ##
+
+You can explicitly manage the Redis connection:
+
+```javascript
+// Check if Redis is connected
+const isConnected = cachegoose.isConnected();
+
+// Manually connect (returns Promise)
+await cachegoose.connect();
+
+// Disconnect from Redis (returns Promise)
+await cachegoose.disconnect();
+
+// Set a value directly in cache
+await cachegoose.setCache('key', value, ttl);
+```
+
+## Serverless Environment Usage ##
+
+This library provides special optimizations for serverless environments like AWS Lambda, Amplify, Google Cloud Functions, and Azure Functions. Use the `serverlessMode` option to enable these optimizations:
+
+```javascript
+var mongoose = require('mongoose');
+var cachegoose = require('recachegoose-ioredis');
+
+cachegoose(mongoose, {
+  port: 6379,
+  host: 'redis.example.com',
+  password: 'yourpassword',
+  // Enable serverless mode
+  serverlessMode: true,
+  // Customize connection timeout (default: 5000ms)
+  connectTimeout: 3000,
+  // Customize retry attempts per request (default: 3)
+  maxRetriesPerRequest: 2
+});
+```
+
+When serverless mode is enabled:
+
+1. Connections are lazy-loaded on first use (not created until needed)
+2. Default TTL is increased to 5 minutes (300 seconds)
+3. Connection timeouts are more aggressive
+4. Connection retry strategy is optimized for ephemeral environments
+5. Keep-alive settings are tuned for serverless function execution
+6. Better handling of reconnection scenarios
+
+Example usage pattern for AWS Lambda:
+
+```javascript
+// Lambda handler
+exports.handler = async (event) => {
+  // Initialize cachegoose once (will be reused if Lambda container is reused)
+  if (!mongooseClient.isInitialized()) {
+    mongooseClient.init();
+  }
+  
+  try {
+    // Connect to database and Redis if needed
+    await mongooseClient.connect();
+    
+    // Use cached query results
+    const records = await Record.find({}).cache(60).exec();
+    
+    return {
+      statusCode: 200,
+      body: JSON.stringify(records)
+    };
+  } finally {
+    // No need to disconnect in serverless mode
+    // The connection will be automatically managed
+  }
+};
+
+// Helper for database connections
+const mongooseClient = {
+  isInitialized: () => !!mongoose.models.Record,
+  
+  init: () => {
+    // Set up mongoose models
+    // ...
+    
+    // Initialize cachegoose with serverless mode
+    cachegoose(mongoose, {
+      port: process.env.REDIS_PORT,
+      host: process.env.REDIS_HOST,
+      password: process.env.REDIS_PASSWORD,
+      serverlessMode: true
+    });
+  },
+  
+  connect: async () => {
+    // Connect to MongoDB if needed
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connect(process.env.MONGODB_URI);
+    }
+    
+    // Ensure Redis is connected
+    if (!cachegoose.isConnected()) {
+      await cachegoose.connect();
+    }
+  }
+};
+```
+
 ## Clearing the cache ##
 
 If you want to clear the cache for a specific query, you must specify the cache key yourself:
