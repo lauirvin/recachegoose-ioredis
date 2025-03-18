@@ -1,6 +1,8 @@
 > This is a fork version of [recachegoose](https://github.com/aalfiann/recachegoose) with following differences:
 - Replaced [recacheman](https://github.com/aalfiann/recacheman) with [ioredis](https://github.com/redis/ioredis)
 - Improved integration with serverless environment - AWS Amplify, AWS Lambda, Google Cloud Functions, Azure Functions, etc.
+- Added proper Promise-based API with backward compatibility for callbacks
+- Enhanced error handling and connection management
 
 # recachegoose-ioredis #
 
@@ -21,14 +23,11 @@ A Mongoose caching module that works exactly how you'd expect, fully compatible 
 > Important:  
   If you are using Mongoose 4.x or below, you have to use original [cachegoose](https://github.com/boblauer/cachegoose) and use version <= 4.x of it.
 
+## Basic Setup ##
 
-
-## Usage ##
-
-- Use Redis
 ```javascript
-var mongoose = require('mongoose');
-var cachegoose = require('recachegoose-ioredis');
+const mongoose = require('mongoose');
+const cachegoose = require('recachegoose-ioredis');
 
 cachegoose(mongoose, {
   port: 6379,
@@ -37,60 +36,115 @@ cachegoose(mongoose, {
 });
 ```
 
-- Set Cache
-```js
-Record
-  .find({ some_condition: true })
-  .cache(30) // The number of seconds to cache the query.  Defaults to 60 seconds.
-  .exec(function(err, records) { // You are able to use callback or promise
-    ...
-  });
+## Usage ##
 
-Record
-  .aggregate()
-  .group({ total: { $sum: '$some_field' } })
-  .cache(0) // Explicitly passing in 0 will cache the results indefinitely.
-  .exec(function(err, aggResults) {
-    ...
-  });
-```
+### Caching Queries
 
-You can also pass a custom key into the `.cache()` method, which you can then use later to clear the cached content.
+To cache the results of a mongoose query, simply add `.cache()` to the query chain:
 
 ```javascript
-var userId = '1234567890';
-
-Children
-  .find({ parentId: userId })
-  .cache(0, userId + '-children') /* Will create a redis entry          */
-  .exec(function(err, records) {  /* with the key '1234567890-children' */
-    ...
+// Cache for 30 seconds (default is 60 seconds)
+Record
+  .find({ some_condition: true })
+  .cache(30)
+  .exec(function(err, records) {
+    // Results will be cached for 30 seconds
   });
 
+// With Promises/async-await
+const records = await Record
+  .find({ some_condition: true })
+  .cache(30)
+  .exec();
+
+// Cache indefinitely (until manually cleared)
+const results = await Record
+  .aggregate()
+  .group({ total: { $sum: '$some_field' } })
+  .cache(0)
+  .exec();
+```
+
+### Custom Cache Keys
+
+You can use custom keys to give you more control over cache invalidation:
+
+```javascript
+const userId = '1234567890';
+
+// Using a custom cache key
+const children = await Children
+  .find({ parentId: userId })
+  .cache(60, `user_${userId}_children`)
+  .exec();
+
+// Clear that specific cache entry
+await cachegoose.clearCache(`user_${userId}_children`);
+
+// Using cache keys in lifecycle hooks
 ChildrenSchema.post('save', function(child) {
-  // Clear the parent's cache, since a new child has been added.
-  cachegoose.clearCache(child.parentId + '-children');
+  // Clear the parent's cache when a new child is added
+  cachegoose.clearCache(`user_${child.parentId}_children`);
 });
 ```
 
-Insert `.cache()` into the queries you want to cache, and they will be cached.  Works with `select`, `lean`, `sort`, and anything else that will modify the results of a query.
-
 ## Connection Management ##
 
-You can explicitly manage the Redis connection:
+The library provides full control over Redis connections with a Promise-based API:
 
 ```javascript
 // Check if Redis is connected
 const isConnected = cachegoose.isConnected();
 
-// Manually connect (returns Promise)
+// Explicitly connect (returns Promise)
 await cachegoose.connect();
+// or with callbacks
+cachegoose.connect((err, success) => {
+  if (err) console.error('Connection failed:', err);
+  else console.log('Connected successfully');
+});
 
 // Disconnect from Redis (returns Promise)
 await cachegoose.disconnect();
+// or with callbacks
+cachegoose.disconnect((err) => {
+  if (err) console.error('Disconnect error:', err);
+  else console.log('Disconnected successfully');
+});
 
-// Set a value directly in cache
-await cachegoose.setCache('key', value, ttl);
+// Manually set cache values
+await cachegoose.setCache('my-key', { some: 'data' });
+// With TTL (in seconds)
+await cachegoose.setCache('another-key', { expires: true }, 120);
+// With callback
+cachegoose.setCache('callback-key', { data: true }, 60, (err) => {
+  if (err) console.error('Cache error:', err);
+});
+
+// Clear specific cache
+await cachegoose.clearCache('my-key');
+// Clear all cache
+await cachegoose.clearCache();
+```
+
+### Error Handling
+
+You can check the last error that occurred during Redis operations:
+
+```javascript
+// After an operation fails
+if (!cachegoose.isConnected()) {
+  // Get the last error message
+  const lastError = cachegoose._cache.getLastError();
+  console.log('Redis connection error:', lastError);
+  
+  // Attempt to reconnect
+  try {
+    await cachegoose.connect();
+  } catch (error) {
+    console.error('Reconnection failed');
+  }
+}
 ```
 
 ## Serverless Environment Usage ##
@@ -98,8 +152,8 @@ await cachegoose.setCache('key', value, ttl);
 This library provides special optimizations for serverless environments like AWS Lambda, Amplify, Google Cloud Functions, and Azure Functions. Use the `serverlessMode` option to enable these optimizations:
 
 ```javascript
-var mongoose = require('mongoose');
-var cachegoose = require('recachegoose-ioredis');
+const mongoose = require('mongoose');
+const cachegoose = require('recachegoose-ioredis');
 
 cachegoose(mongoose, {
   port: 6379,
@@ -107,23 +161,27 @@ cachegoose(mongoose, {
   password: 'yourpassword',
   // Enable serverless mode
   serverlessMode: true,
-  // Customize connection timeout (default: 5000ms)
-  connectTimeout: 3000,
-  // Customize retry attempts per request (default: 3)
-  maxRetriesPerRequest: 2
+  // Optional: customize connection parameters
+  connectTimeout: 3000,         // Default: 5000ms
+  maxRetriesPerRequest: 2,      // Default: 3
+  prefix: 'my-app:',            // Default: 'cachegoose:'
+  keepAlive: 5000,              // Default: 10000ms (10s)
+  // Any other ioredis options are also supported
 });
 ```
 
+### Serverless Mode Benefits
+
 When serverless mode is enabled:
 
-1. Connections are lazy-loaded on first use (not created until needed)
-2. Default TTL is increased to 5 minutes (300 seconds)
-3. Connection timeouts are more aggressive
-4. Connection retry strategy is optimized for ephemeral environments
-5. Keep-alive settings are tuned for serverless function execution
-6. Better handling of reconnection scenarios
+1. **Lazy connection**: Connections are only established when needed, not at initialization
+2. **Optimized TTL**: Default TTL is 5 minutes (300 seconds) instead of 60 seconds
+3. **Connection timeouts**: More aggressive timeouts to prevent hanging functions
+4. **Retry strategy**: Exponential backoff with sensible limits
+5. **Connection pooling**: Optimized for ephemeral container environments
+6. **Auto reconnection**: Improved handling of reconnection when containers are reused
 
-Example usage pattern for AWS Lambda:
+### AWS Lambda Example
 
 ```javascript
 // Lambda handler
@@ -181,31 +239,67 @@ const mongooseClient = {
 };
 ```
 
-## Clearing the cache ##
+### Advanced Configuration
 
-If you want to clear the cache for a specific query, you must specify the cache key yourself:
+The library supports all [ioredis configuration options](https://github.com/redis/ioredis/blob/master/API.md#Redis) in addition to the special serverless options:
 
-```js
-function getChildrenByParentId(parentId, cb) {
-  Children
-    .find({ parentId })
-    .cache(0, `${parentId}_children`)
-    .exec(cb);
-}
-
-function clearChildrenByParentIdCache(parentId, cb) {
-  cachegoose.clearCache(`${parentId}_children`, cb);
-}
+```javascript
+cachegoose(mongoose, {
+  // Redis connection
+  host: 'redis.example.com',
+  port: 6379,
+  password: 'secret',
+  db: 0,
+  
+  // Serverless mode
+  serverlessMode: true,
+  
+  // Connection pooling
+  maxRetriesPerRequest: 3,
+  retryStrategy: (times) => Math.min(times * 200, 2000),
+  
+  // Timeouts
+  connectTimeout: 5000,
+  commandTimeout: 2000,
+  
+  // TLS options
+  tls: {
+    // TLS options
+  }
+});
 ```
 
-If you call `cachegoose.clearCache(null, cb)` without passing a cache key as the first parameter, the entire cache will be cleared for all queries.
+## Clearing the cache ##
+
+Clear specific cache entries by key:
+
+```javascript
+// Clear a specific cache entry
+await cachegoose.clearCache('my-cache-key');
+// or with callback
+cachegoose.clearCache('my-cache-key', (err) => {
+  if (err) console.error('Failed to clear cache:', err);
+});
+
+// Clear all cache
+await cachegoose.clearCache();
+```
 
 ## Caching populated documents ##
 
 When a document is returned from the cache, cachegoose will [hydrate](http://mongoosejs.com/docs/api.html#model_Model.hydrate) it, which initializes it's virtuals/methods. Hydrating a populated document will discard any populated fields (see [Automattic/mongoose#4727](https://github.com/Automattic/mongoose/issues/4727)). To cache populated documents without losing child documents, you must use `.lean()`, however if you do this you will not be able to use any virtuals/methods (it will be a plain object).
 
+```javascript
+// For populated documents, use lean() to preserve the populated fields
+const users = await User
+  .find()
+  .populate('posts')
+  .lean()
+  .cache(60, 'users-with-posts')
+  .exec();
+```
+
 ## Test ##
 For development mode, you have to use minimum nodejs 14
 ```
 npm test
-```
