@@ -98,7 +98,7 @@ class Cache {
     return this._connectionPromise;
   }
 
-  // Get the last connection error 
+  // Get the last connection error
   getLastError() {
     return this._errors.length > 0 ? this._errors[0] : null;
   }

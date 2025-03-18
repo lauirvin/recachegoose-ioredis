@@ -11,19 +11,31 @@ class Cache {
       // Default connection options that work well for serverless
       connectTimeout: options.connectTimeout || 5000, // 5 second timeout
       maxRetriesPerRequest: options.maxRetriesPerRequest || 3,
-      retryStrategy: options.retryStrategy || ((times) => {
-        // Exponential backoff with max 1 second delay
-        return Math.min(times * 100, 1000);
-      }),
+      retryStrategy:
+        options.retryStrategy ||
+        ((times) => {
+          // Exponential backoff with max 1 second delay
+          return Math.min(times * 100, 1000);
+        }),
       // Add option for enabling serverless mode
-      enableOfflineQueue: options.enableOfflineQueue !== undefined ? options.enableOfflineQueue : true,
+      enableOfflineQueue:
+        options.enableOfflineQueue !== undefined
+          ? options.enableOfflineQueue
+          : true,
       // Add keep-alive for connection reuse
       keepAlive: options.keepAlive !== undefined ? options.keepAlive : 10000, // 10 seconds
       // Automatically reconnect
-      reconnectOnError: options.reconnectOnError || ((err) => {
-        const targetErrors = [/READONLY/, /ETIMEDOUT/, /ECONNRESET/, /ECONNREFUSED/];
-        return targetErrors.some(pattern => pattern.test(err.message));
-      })
+      reconnectOnError:
+        options.reconnectOnError ||
+        ((err) => {
+          const targetErrors = [
+            /READONLY/,
+            /ETIMEDOUT/,
+            /ECONNRESET/,
+            /ECONNREFUSED/,
+          ];
+          return targetErrors.some(pattern => pattern.test(err.message));
+        }),
     };
 
     // Extract serverless mode option
@@ -55,12 +67,12 @@ class Cache {
         // Create new Redis client if needed
         if (!this._cache) {
           this._cache = new Redis(this._redisOptions);
-        
+
           // Set up event listeners
           this._cache.on('connect', () => {
             this._isConnected = true;
           });
-        
+
           this._cache.on('error', (err) => {
             // Store the last few errors instead of logging them
             this._errors.unshift(err.message);
@@ -70,7 +82,7 @@ class Cache {
             }
             this._isConnected = false;
           });
-        
+
           this._cache.on('end', () => {
             this._isConnected = false;
           });
@@ -78,11 +90,12 @@ class Cache {
           // Wait for ready event
           await new Promise((resolve) => {
             // Set up a timeout for serverless environments
-            const timeout = this._serverlessMode ? 
-              setTimeout(() => {
+            const timeout = this._serverlessMode
+              ? setTimeout(() => {
                 this._cache.disconnect();
                 resolve(false);
-              }, this._redisOptions.connectTimeout || 5000) : null;
+              }, this._redisOptions.connectTimeout || 5000)
+              : null;
 
             this._cache.once('ready', () => {
               this._isConnected = true;
@@ -91,7 +104,7 @@ class Cache {
             });
           });
         }
-        
+
         return this._isConnected;
       } catch (err) {
         this._isConnected = false;
@@ -105,7 +118,7 @@ class Cache {
     return this._connectionPromise;
   }
 
-  // Get the last connection error 
+  // Get the last connection error
   getLastError() {
     return this._errors.length > 0 ? this._errors[0] : null;
   }
@@ -149,7 +162,12 @@ class Cache {
       } else {
         // Use a reasonable default TTL for serverless environments (5 minutes)
         const effectiveTTL = ttl || (this._serverlessMode ? 300 : 60);
-        await this._cache.set(this._prefix + key, serialized, 'EX', effectiveTTL);
+        await this._cache.set(
+          this._prefix + key,
+          serialized,
+          'EX',
+          effectiveTTL
+        );
       }
       cb(null);
       return true;
